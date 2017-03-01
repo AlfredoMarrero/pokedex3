@@ -19,7 +19,32 @@ class Pokemon {
     private var _weight: String!//
     private var _attack: String!//
     private var _nextEvolutionTxt: String!
+    private var _nextEvolutionName: String!
+    private var _nextEvolutionId: String!
+    private var _nextEvolutionLevel: String!
     private var _pokemonURL: String!
+    
+    var nextEvolutionLevel: String {
+        if _nextEvolutionLevel == nil {
+            _nextEvolutionLevel = ""
+        }
+        return _nextEvolutionLevel
+    }
+    
+    
+    var nextEvolutionId: String {
+        if _nextEvolutionId == nil {
+            _nextEvolutionId = ""
+        }
+        return _nextEvolutionId
+    }
+    
+    var nextEvolutionName: String {
+        if _nextEvolutionName == nil {
+            _nextEvolutionName = ""
+        }
+        return _nextEvolutionName
+    }
     
     var name: String {
         if _name == nil {
@@ -86,14 +111,11 @@ class Pokemon {
         return _nextEvolutionTxt
     }
     
-    
-    
     init (name: String, pokedexId: Int) {
         self._name = name
         self._pokedexId = pokedexId
         self._pokemonURL = "\(URL_BASE)\(URL_POKEMON)\(self.pokedexId)/"
     }
-    
     
     func downloadPokemonDetail( completed: @escaping DownloadComplete) {
         
@@ -110,8 +132,6 @@ class Pokemon {
                 return
             }
             self._attack = "\(attack)"
-            
-            
             
             guard let height = dataDictionary ["height"] as? String else {
                 print("Cannot find key height in \(dataDictionary)")
@@ -151,14 +171,83 @@ class Pokemon {
             
             self._type = text.capitalized
             
-            print ("+++++++++++++++++++++++++++++++++++++++++    +++++++++++++++   +++")
-            print (self._type)
+            guard let descriptions = dataDictionary["descriptions"] as? [Dictionary<String, AnyObject>] else {
+                print("Cannot find key descriptions in \(dataDictionary)")
+                return
+            }
             
+            if descriptions.count > 0 {
+                guard let descriptionUrl = descriptions[0]["resource_uri"] as? String else{
+                    print ("Cannot find key resource_url in \(descriptions)")
+                    return
+                }
+                
+                
+                let url = URL(string: "\(URL_BASE)\(descriptionUrl)")!
+                
+                Alamofire.request(url).responseJSON { response in
+                    
+                    guard let responseDictionary = response.result.value as? Dictionary <String, AnyObject> else {
+                        print("Cannot fetch data from \(response.result.value)")
+                        return
+                    }
+                    
+                    guard let description = responseDictionary["description"] as? String else {
+                        
+                        print ("Cannot fetch key description from \(responseDictionary))")
+                        return
+                    }
+                    
+                    self._description = description.replacingOccurrences(of: "POKMON", with: "Pokemon")
+                    completed()
+                }
+            }
             
+            guard let evolutionArray = dataDictionary["evolutions"] as?  [Dictionary<String, AnyObject>] else {
+                print ("Cannot find key evolutions in \(dataDictionary)")
+                return
+            }
+            
+            if evolutionArray.count > 0 {
+                
+                
+                guard let nextEvolutionName = evolutionArray[0]["to"] as? String else {
+                    print("Cannot find key to in\(evolutionArray[0])")
+                    return
+                }
+                
+                if nextEvolutionName.range(of: "mega") == nil {
+                    self._nextEvolutionName = nextEvolutionName
+                    
+                    guard var evolutionStr = evolutionArray[0]["resource_uri"] as? String else {
+                        print ("Cannot find key resource_uri in \(evolutionArray[0])")
+                        return
+                    }
+                    
+                    evolutionStr = evolutionStr.replacingOccurrences(of: "/api/v1/pokemon/", with: "")
+                    evolutionStr = evolutionStr.replacingOccurrences(of: "/", with: "")
+                    self._nextEvolutionId = evolutionStr
+                    
+                    if let Level = evolutionArray [0]["level"] {
+                        
+                        if let lvl = Level as? Int {
+                            self._nextEvolutionLevel = "\(lvl)"
+                        }
+                        
+                    }
+                    else {
+                        self._nextEvolutionLevel = ""
+                        
+                    }
+                    
+                } else {
+                    self._nextEvolutionId = ""
+                    self._nextEvolutionLevel = ""
+                }
+                
+                print (nextEvolutionName, self._nextEvolutionId, self._nextEvolutionLevel )
+            }
             completed()
         }
-        
-        
     }
-    
 }

@@ -9,7 +9,7 @@
 import UIKit
 
 class PokemonDetailVC: UIViewController {
-
+    
     var pokemon: Pokemon!
     
     @IBOutlet weak var nameLbl: UILabel!
@@ -24,9 +24,7 @@ class PokemonDetailVC: UIViewController {
     @IBOutlet weak var currentEvoImg: UIImageView!
     @IBOutlet weak var nextEvoImg: UIImageView!
     @IBOutlet weak var evoLbl: UILabel!
-
     
-    //@IBOutlet weak var nameLbl: UILabel!
     override func viewDidLoad() {
         
         nameLbl.text = pokemon.name.capitalized
@@ -40,23 +38,30 @@ class PokemonDetailVC: UIViewController {
         pokemon.downloadPokemonDetail {
             self.updateUI()
         }
-        
-
     }
-
+    
     func updateUI(){
         attackLbl.text = pokemon.attack
         defenseLbl.text = pokemon.defense
         heightLbl.text = pokemon.height
         weightLbl.text = pokemon.weight
         typeLabel.text = pokemon.type
+        descriptionLabel.text = pokemon.description
+        
+        if pokemon.nextEvolutionId == "" {
+            evoLbl.text = "No Evolutions."
+            nextEvoImg.isHidden = true
+            
+        }else {
+            nextEvoImg.isHidden = false
+            nextEvoImg.image = UIImage(named: pokemon.nextEvolutionId)
+            let str = "Next Evolution: \(pokemon.nextEvolutionName) - LVL \(pokemon.nextEvolutionLevel)"
+            evoLbl.text = str
+        }
     }
-    
     
     @IBAction func backButton(_ sender: UIButton) {
         
         dismiss(animated: true, completion: nil)
     }
-    
-
 }
